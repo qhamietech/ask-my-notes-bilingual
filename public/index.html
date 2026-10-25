@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ask My Notes</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #222; }
+    h1 { margin-bottom: 4px; }
+    .tagline { color: #666; margin-top: 0; font-size: 14px; }
+    h2 { margin-top: 40px; font-size: 18px; border-top: 1px solid #ddd; padding-top: 20px; }
+    input, textarea, select { width: 100%; padding: 10px; font-size: 16px; box-sizing: border-box; margin-bottom: 10px; font-family: inherit; }
+    textarea { min-height: 120px; }
+    button { padding: 10px 20px; font-size: 16px; margin-top: 5px; margin-right: 6px; cursor: pointer; }
+    #answer { margin-top: 20px; padding: 15px; background: #f4f4f4; border-radius: 6px; white-space: pre-wrap; display: none; }
+    #answer.refused { background: #fff6e5; }
+    .source { margin-top: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; }
+    .source-head { font-weight: bold; margin-bottom: 4px; }
+    .source-passage { color: #444; white-space: pre-wrap; }
+    .badge { display: inline-block; padding: 1px 8px; border: 1px solid #999; border-radius: 10px; font-size: 12px; margin-left: 6px; font-weight: normal; }
+    .note-card { border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-bottom: 10px; }
+    .note-title { font-weight: bold; font-size: 15px; }
+    .note-meta { font-size: 12px; color: #888; margin: 4px 0; }
+    .note-preview { font-size: 14px; color: #333; }
+    .note-actions button { font-size: 13px; padding: 5px 12px; margin-top: 8px; }
+    #noteStatus { margin-top: 8px; font-size: 14px; }
+    #cancelBtn { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Ask My Notes</h1>
+  <p class="tagline">Answers only from the saved notes, shows the passage it used, and says so when it has no answer.</p>
+
+  <input type="text" id="question" placeholder="Ask a question about the notes..." maxlength="1000" />
+  <button id="askBtn">Ask</button>
+  <div id="answer"></div>
+  <div id="sources"></div>
+
+  <h2>Add or edit a note</h2>
+  <input type="password" id="adminKey" placeholder="Admin key (needed to add or edit on the live site)" autocomplete="off" />
+  <input type="text" id="noteTitle" placeholder="Note title..." maxlength="200" />
+  <select id="noteLanguage">
+    <option value="en">English</option>
+    <option value="xh">isiXhosa</option>
+    <option value="mixed">Mixed</option>
+  </select>
+  <textarea id="noteContent" placeholder="Paste your note content here..."></textarea>
+  <button id="saveBtn">Add Note</button>
+  <button id="cancelBtn">Cancel</button>
+  <div id="noteStatus"></div>
+
+  <h2>Notes</h2>
+  <div id="notesList">Loading notes...</div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const LANGUAGE_LABELS = { en: 'English', xh: 'isiXhosa', mixed: 'Mixed' };
+    let currentNotes = [];
+    let editingId = null;
+
+    function languageLabel(code) {
+      return LANGUAGE_LABELS[code] || code;
+    }
+
+    function formatDate(isoString) {
+      const d = new Date(isoString);
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function adminHeaders() {
+      const headers = { 'Content-Type': 'application/json' };
+      const key = $('adminKey').value;
+      if (key) headers['x-admin-key'] = key;
+      return headers;
+    }
+
+    // ---------- Ask ----------
+    async function askQuestion() {
+      const question = $('question').value.trim();
+      if (!question) return;
+
+      const answerEl = $('answer');
+      const sourcesEl = $('sources');
+      answerEl.style.display = 'block';
+      answerEl.className = '';
+      answerEl.textContent = 'Thinking...';
+      sourcesEl.textContent = '';
+      $('askBtn').disabled = true;
+
+      try {
+        const response = await fetch('/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question }),
+        });
+        const data = await response.json();
+
+        if (data.error) {
+          answerEl.textContent = 'Error: ' + data.error;
+          return;
+        }
+
+        answerEl.textContent = data.answer;
+        if (data.refused) answerEl.className = 'refused';
+        renderSources(data.sources);
+      } catch (err) {
+        answerEl.textContent = 'Error: could not reach the server.';
+      } finally {
+        $('askBtn').disabled = false;
+      }
+    }
+
+    function renderSources(sources) {
+      const el = $('sources');
+      el.textContent = '';
+      if (!sources || sources.length === 0) return;
+
+      sources.forEach((s) => {
+        const box = document.createElement('div');
+        box.className = 'source';
+
+        const head = document.createElement('div');
+        head.className = 'source-head';
+        head.textContent = s.title;
+
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = languageLabel(s.language) + ' · similarity ' + s.similarity.toFixed(3);
+        head.appendChild(badge);
+
+        const passage = document.createElement('div');
+        passage.className = 'source-passage';
+        passage.textContent = s.passage;
+
+        box.appendChild(head);
+        box.appendChild(passage);
+        el.appendChild(box);
+      });
+    }
+
+    // ---------- Add / edit ----------
+    function resetForm() {
+      editingId = null;
+      $('noteTitle').value = '';
+      $('noteContent').value = '';
+      $('noteLanguage').value = 'en';
+      $('saveBtn').textContent = 'Add Note';
+      $('cancelBtn').style.display = 'none';
+    }
+
+    function startEdit(note) {
+      editingId = note.id;
+      $('noteTitle').value = note.title;
+      $('noteContent').value = note.raw_content;
+      $('noteLanguage').value = note.language;
+      $('saveBtn').textContent = 'Save Changes';
+      $('cancelBtn').style.display = 'inline-block';
+      $('noteStatus').textContent = 'Editing "' + note.title + '"';
+      $('noteTitle').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    async function saveNote() {
+      const title = $('noteTitle').value.trim();
+      const content = $('noteContent').value.trim();
+      const language = $('noteLanguage').value;
+      const status = $('noteStatus');
+
+      if (!title || !content) {
+        status.textContent = 'Please fill in both title and content.';
+        return;
+      }
+
+      const isEdit = editingId !== null;
+      status.textContent = isEdit ? 'Saving...' : 'Adding note...';
+      $('saveBtn').disabled = true;
+
+      try {
+        const response = await fetch(isEdit ? '/notes/' + editingId : '/notes', {
+          method: isEdit ? 'PUT' : 'POST',
+          headers: adminHeaders(),
+          body: JSON.stringify({ title, content, language }),
+        });
+        const data = await response.json();
+
+        if (data.error) {
+          status.textContent = 'Error: ' + data.error;
+          return;
+        }
+
+        status.textContent = isEdit ? 'Note updated.' : 'Note added.';
+        resetForm();
+        loadNotes();
+      } catch (err) {
+        status.textContent = 'Error: could not reach the server.';
+      } finally {
+        $('saveBtn').disabled = false;
+      }
+    }
+
+    // ---------- Notes list ----------
+    async function loadNotes() {
+      const listEl = $('notesList');
+      try {
+        const response = await fetch('/notes');
+        const data = await response.json();
+        currentNotes = data.notes || [];
+      } catch (err) {
+        listEl.textContent = 'Could not load notes.';
+        return;
+      }
+
+      listEl.textContent = '';
+      if (currentNotes.length === 0) {
+        listEl.textContent = 'No notes yet.';
+        return;
+      }
+
+      currentNotes.forEach((note) => {
+        const card = document.createElement('div');
+        card.className = 'note-card';
+
+        const title = document.createElement('div');
+        title.className = 'note-title';
+        title.textContent = note.title;
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = languageLabel(note.language);
+        title.appendChild(badge);
+
+        const meta = document.createElement('div');
+        meta.className = 'note-meta';
+        meta.textContent = 'Added: ' + formatDate(note.created_at) + ' · Last edited: ' + formatDate(note.updated_at);
+
+        const preview = document.createElement('div');
+        preview.className = 'note-preview';
+        preview.textContent = note.raw_content.slice(0, 120) + (note.raw_content.length > 120 ? '...' : '');
+
+        const actions = document.createElement('div');
+        actions.className = 'note-actions';
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.dataset.noteId = note.id;
+        editBtn.addEventListener('click', () => {
+          const found = currentNotes.find((n) => String(n.id) === editBtn.dataset.noteId);
+          if (found) startEdit(found);
+        });
+        actions.appendChild(editBtn);
+
+        card.append(title, meta, preview, actions);
+        listEl.appendChild(card);
+      });
+    }
+
+    // ---------- Wire up ----------
+    $('askBtn').addEventListener('click', askQuestion);
+    $('question').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') askQuestion();
+    });
+    $('saveBtn').addEventListener('click', saveNote);
+    $('cancelBtn').addEventListener('click', () => {
+      resetForm();
+      $('noteStatus').textContent = '';
+    });
+
+    loadNotes();
+  </script>
+</body>
+</html>
