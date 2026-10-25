@@ -3,13 +3,14 @@
 A small retrieval-augmented generation (RAG) app. It answers questions using only the notes saved in it, shows the passage it used, and says so when no note is relevant.
 
 **Live demo:** https://ask-my-notes-psi.vercel.app
+
 Anyone can ask questions and read the notes. Adding or editing notes needs an admin key.
 
 > **Status: working prototype.** Retrieval, refusal and the admin lock work on a handful of hand-checked examples. **There are no accuracy figures yet, and nothing has been tested in isiXhosa yet.** See [What has and hasn't been tested](#what-has-and-hasnt-been-tested).
 
 ## Why this project
 
-Many AI tools sound equally sure whether or not they have an answer, and most RAG demos are only tested in English. The goal here is a tool that refuses when it has nothing relevant, and, as the next stage, is measured separately in English and isiXhosa, with its failures published.
+Many AI tools sound equally sure whether or not they have an answer. The goal here is a tool that refuses when it has nothing relevant, and, as the next stage, is measured separately in English and isiXhosa, with its failures published.
 
 This version is the foundation for that work. Notes already carry a language tag (`en`, `xh`, `mixed`). The bilingual evaluation itself has not been done.
 
@@ -41,7 +42,7 @@ All model names and the threshold live in [`config.js`](config.js), so a depreca
 ## What has and hasn't been tested
 
 **Checked by hand:**
-- On a two-note test set, three questions ranked the expected note first, with scores of 0.763, 0.674 and, for an unrelated question about France, 0.408.
+- On a two-note test set, two questions ranked the expected note first (similarity 0.763 and 0.674). An unrelated question about France scored 0.408 at best.
 - On the live site, a question about the app itself returned a correct answer with its source passage (similarity 0.763, matching the local test).
 - On the live site, "What is the capital of France?" was refused.
 - Adding a note without the admin key is refused; adding it with the key works.
@@ -78,11 +79,13 @@ npm install
 Copy-Item .env.example .env
 ```
 
+(Windows PowerShell shown. On macOS or Linux, use `cp .env.example .env`.)
+
 1. Fill in `.env`: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` (the secret key, never the public one) and `GEMINI_API_KEY`. Optionally set `ADMIN_KEY` to lock adding and editing.
 2. In the Supabase SQL Editor, run [`sql/001_schema.sql`](sql/001_schema.sql).
 3. Check the setup, load two sample notes, and start the server:
 
-```powershell
+```
 node check-setup.js
 node seed.js
 node server.js
@@ -93,19 +96,19 @@ Then open http://localhost:3000. The server does not reload on changes: stop it 
 ## Project layout
 
 ```
-config.js          models, threshold, retry settings
-server.js          Express routes: /ask, /notes
-lib/answer.js      retrieval, refusal and answer generation
-lib/notes.js       chunking, embedding and saving notes
-lib/update-note.js editing a note
-lib/clients.js     Supabase and Gemini clients
-lib/retry.js       retry with backoff for rate limits
-lib/text.js        chunker
-public/index.html  the web page
-sql/001_schema.sql database schema and match_notes function
-seed.js            loads sample notes
-check-setup.js     checks the environment and connections
-smoke-test.js      prints raw match scores for three questions
+config.js           models, threshold, retry settings
+server.js           Express routes: /ask, /notes
+lib/answer.js       retrieval, refusal and answer generation
+lib/notes.js        chunking, embedding and saving notes
+lib/update-note.js  editing a note
+lib/clients.js      Supabase and Gemini clients
+lib/retry.js        retry with backoff for rate limits
+lib/text.js         chunker
+public/index.html   the web page
+sql/001_schema.sql  database schema and match_notes function
+seed.js             loads sample notes
+check-setup.js      checks the environment and connections
+smoke-test.js       prints raw match scores for three questions
 ```
 
 ## Lessons carried over from an earlier prototype
