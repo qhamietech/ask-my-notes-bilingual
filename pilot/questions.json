@@ -1,0 +1,18 @@
+[
+  { "id": "en-01", "language": "en", "question": "What abilities does the declaration say every person is born with?", "answerable": true, "expected_article": "1" },
+  { "id": "en-02", "language": "en", "question": "What does the declaration say about a person being acknowledged as a person by the legal system, wherever they are?", "answerable": true, "expected_article": "6" },
+  { "id": "en-03", "language": "en", "question": "What protection does the declaration give against people being urged to discriminate against others?", "answerable": true, "expected_article": "7" },
+  { "id": "en-04", "language": "en", "question": "Does the declaration allow a person to be given a harsher punishment than the one that applied when they committed the act?", "answerable": true, "expected_article": "11" },
+  { "id": "en-05", "language": "en", "question": "What does the declaration say about people who flee persecution and seek safety in another country?", "answerable": true, "expected_article": "14" },
+  { "id": "en-06", "language": "en", "question": "Can a country take away a person's citizenship without a good reason?", "answerable": true, "expected_article": "15" },
+  { "id": "xh-01", "language": "xh", "question": "Ithini inkcazo-jikelele ngezakhono abantu abazalwa nazo?", "answerable": true, "expected_article": "1" },
+  { "id": "xh-02", "language": "xh", "question": "Ithini inkcazo-jikelele ngomntu owaziwa njengomntu yinkqubo yezomthetho, nokuba uphi?", "answerable": true, "expected_article": "6" },
+  { "id": "xh-03", "language": "xh", "question": "inkcazo-jikelele inikisa oluphi ukhuseleko ngakwa bantu abanyanzela ukubandlulula kwabanye? ", "answerable": true, "expected_article": "7" },
+  { "id": "xh-04", "language": "xh", "question": "inkcazo-jikelele ingabe iyamvumela umntu anikwe isigqibo esindzima okudlula esi ebesinikiwe ngoku ebesenza isenzo?", "answerable": true, "expected_article": "11" },
+  { "id": "xh-05", "language": "xh", "question": "Ithini inkcazo-jikelele ngomntu obaleka ukutshutshiswa, aze akhangele ukhuseleko kwelinye ilizwe?", "answerable": true, "expected_article": "14" },
+  { "id": "xh-06", "language": "xh", "question": "Ingaba ilizwe liya kwazi ukuthatha ubumi bomntu bengena sizathu esivakalayo?", "answerable": true, "expected_article": "15" },
+  { "id": "en-07", "language": "en", "question": "Is swimming a sport in South Africa?", "answerable": false, "expected_article": null },
+  { "id": "en-08", "language": "en", "question": "Is Qhamisa a resident in which country?", "answerable": false, "expected_article": null },
+  { "id": "xh-07", "language": "xh", "question": "Ingaba ukuqubha ngumdlalo eMzantsi Afrika? ", "answerable": false, "expected_article": null },
+  { "id": "xh-08", "language": "xh", "question": "Ingaba uQhamisa ngumhlali kweliphi ilizwe? ", "answerable": false, "expected_article": null }
+]
